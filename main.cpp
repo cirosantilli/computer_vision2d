@@ -74,13 +74,13 @@ const bool fullScreen = false;
 
 //robot
 vector3df pos0 = vector3df(0,0,-.5f);
-vector3df lookat0 = vector3df(0,0,0);
+vector3df lookat0 = vector3df(0,0,.5f);
 ICameraSceneNode* camera;
 float rotateSpeed = 100.0f;
 float moveSpeed = 0.0005f;
 float collisionRadius = 0.01f;
 float rotateStep = M_PI;
-float moveStep = 0.05f;
+float moveStep = 0.01f;
 
 int FruitID = 10;
 
@@ -98,24 +98,30 @@ class MyEventReceiver : public IEventReceiver
 
                     if ( event.KeyInput.Key == KEY_KEY_A ){
                         //strafe left
+                        vector3df d = Y.crossProduct(
+                            camera->getTarget() -
+                            camera->getPosition()
+                        )*moveStep;
                         camera->setPosition(
-                            camera->getPosition() -
-                            Y.crossProduct(
-                                camera->getTarget() -
-                                camera->getPosition()
-                            )*moveStep
+                            camera->getPosition() - d
+                        );
+                        camera->setTarget(
+                            camera->getTarget() - d
                         );
                         return true;
                     }
 
                     if ( event.KeyInput.Key == KEY_KEY_D ){
                         //strafe right
+                        vector3df d = Y.crossProduct(
+                            camera->getTarget() -
+                            camera->getPosition()
+                        )*moveStep;
                         camera->setPosition(
-                            camera->getPosition() +
-                            Y.crossProduct(
-                                camera->getTarget() -
-                                camera->getPosition()
-                            )*moveStep
+                            camera->getPosition() + d
+                        );
+                        camera->setTarget(
+                            camera->getTarget() + d
                         );
                         return true;
                     }
