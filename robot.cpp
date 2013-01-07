@@ -17,7 +17,7 @@ BrainInput::BrainInput
 {}
 
 BrainOutput::BrainOutput(
-    float moveStep,
+    float forwardStep,
     float strafeStep,
     float rotateStep
 ) :
@@ -30,7 +30,29 @@ RobotBrain::RobotBrain(){}
 
 void RobotBrain::pushInput(BrainInput* in)
 {
-    curOutput = BrainOutput(.01f,.01f,.1f); //TEST
+    curOutput = BrainOutput(.01f,.00f,10.f); //TEST
+
+    //int width = image->getDimension().Width;
+    //int center[2] = {width/2,image->getDimension().Height/2};
+
+    //irr::video::SColor centerPx = image->getPixel(center[0],center[1]);
+
+    //printf( "%d %d %d \n", centerPx.getRed(), centerPx.getGreen(), centerPx.getBlue());
+
+    //pleasure = 0.0;
+
+    //// sight pleasure. seeing good things makes you happy.
+    //for(int i=0; i<width; i++){
+        //irr::video::SColor curPx = image->getPixel(i,center[1]);
+        //float green = curPx.getGreen()/255.0f;
+        //float red = curPx.getRed()/255.0f;
+        //float x = ((float)(i-center[0]))/((float)(2.0*width));
+        //this->pleasure += green*exp(-x*x*100);                          // exponential from center pleasure function
+    //}
+    //pleasure = pleasure/width;  // average all. maximum is 2\int_0^1 exp() < 1
+
+    //if(in->touchFruit)
+        //pleasure += 10;
 }
 
 BrainOutput* RobotBrain::getOutput() { return &curOutput; }
@@ -73,49 +95,28 @@ void Robot::update()
     in = getBrainInput();
     brain.pushInput(&in);
     actuate(brain.getOutput());
-
-    //int width = image->getDimension().Width;
-    //int center[2] = {width/2,image->getDimension().Height/2};
-
-    //irr::video::SColor centerPx = image->getPixel(center[0],center[1]);
-
-    //printf( "%d %d %d \n", centerPx.getRed(), centerPx.getGreen(), centerPx.getBlue());
-
-    //pleasure = 0.0;
-
-    //// sight pleasure. seeing good things makes you happy.
-    //for(int i=0; i<width; i++){
-        //irr::video::SColor curPx = image->getPixel(i,center[1]);
-        //float green = curPx.getGreen()/255.0f;
-        //float red = curPx.getRed()/255.0f;
-        //float x = ((float)(i-center[0]))/((float)(2.0*width));
-        //this->pleasure += green*exp(-x*x*100);                          // exponential from center pleasure function
-    //}
-    //pleasure = pleasure/width;  // average all. maximum is 2\int_0^1 exp() < 1
-
-    //if(in->touchFruit)
-        //pleasure += 10;
 }
 
 void Robot::actuate(BrainOutput* out)
 {
-
+    vector3df dx =
     //forward
-    camera->setPosition(
-        camera->getPosition() +
-        (
-            camera->getTarget() -
-            camera->getPosition()
-        )*out->forwardStep
-    );
-
+    (
+        camera->getTarget() -
+        camera->getPosition()
+    )*out->forwardStep
+    +
     //strafe
+    Y.crossProduct(
+        camera->getTarget() -
+        camera->getPosition()
+    )*out->strafeStep;
+
     camera->setPosition(
-        camera->getPosition() +
-        Y.crossProduct(
-            camera->getTarget() -
-            camera->getPosition()
-        )*out->strafeStep
+        camera->getPosition() + dx
+    );
+    camera->setTarget(
+        camera->getTarget() + dx
     );
 
     //rotation
@@ -133,56 +134,51 @@ std::string Robot::str()
     vector3df pos = camera->getPosition();
     vector3df lookat = camera->getTarget();
 
-    if(pos != oldpos || lookat != oldlookat)
-    {
-        oss << "pos:";
-        oss << endl;
-        oss << pos.X;
-        oss << endl;
-        oss << pos.Z;
-        oss << endl;
+    oss << "pos:";
+    oss << endl;
+    oss << pos.X;
+    oss << endl;
+    oss << pos.Z;
+    oss << endl;
 
-        oss << "lookat:";
-        oss << endl;
-        oss << lookat.X;
-        oss << endl;
-        oss << lookat.Z;
-        oss << endl;
+    oss << "lookat:";
+    oss << endl;
+    oss << lookat.X;
+    oss << endl;
+    oss << lookat.Z;
+    oss << endl;
 
-        /*rgb print
-            oss << "rgb:";
-            oss << endl;
-            IImage* img = driver->createScreenShot();
-            for(int i=0; i<img->getDimension().Width; i++){
-                SColor c = img->getPixel(i,0);
-                oss << c.getRed();
-                oss << " ";
-                oss << c.getGreen();
-                oss << " ";
-                oss << c.getBlue();
-                oss << endl;
-            }
-            oss << endl;
-        */
-        if(in.collisionOccurred)
-        {
-            //oss << "collision:";
-            //oss << endl;
-            //oss << "point";
-            //oss << endl;
-            //oss << col.X;
-            //oss << endl;
-            //oss << col.Z;
-            //oss << endl;
-            oss << "collision angle:";
-            oss << endl;
-            oss << in.collisionAngle;
+    /*rgb print
+        oss << "rgb:";
+        oss << endl;
+        IImage* img = driver->createScreenShot();
+        for(int i=0; i<img->getDimension().Width; i++){
+            SColor c = img->getPixel(i,0);
+            oss << c.getRed();
+            oss << " ";
+            oss << c.getGreen();
+            oss << " ";
+            oss << c.getBlue();
             oss << endl;
         }
         oss << endl;
+    */
+    if(in.collisionOccurred)
+    {
+        //oss << "collision:";
+        //oss << endl;
+        //oss << "point";
+        //oss << endl;
+        //oss << col.X;
+        //oss << endl;
+        //oss << col.Z;
+        //oss << endl;
+        oss << "collision angle:";
+        oss << endl;
+        oss << in.collisionAngle;
+        oss << endl;
     }
-    oldpos = pos;
-    oldlookat = lookat;
- 
+    oss << endl;
+
     return oss.str();
 }

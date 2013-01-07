@@ -66,7 +66,7 @@ using namespace core;
 using namespace scene;
 using namespace video;
 
-const bool test = true;       //test keyboard control vs automatic
+const bool test = false;       //test keyboard control vs automatic
 
 //window
 dimension2d<u32> windowSize = dimension2d<u32>(400, 400);
@@ -98,30 +98,30 @@ class MyEventReceiver : public IEventReceiver
 
                     if ( event.KeyInput.Key == KEY_KEY_A ){
                         //strafe left
-                        vector3df d = Y.crossProduct(
+                        vector3df dx = Y.crossProduct(
                             camera->getTarget() -
                             camera->getPosition()
                         )*moveStep;
                         camera->setPosition(
-                            camera->getPosition() - d
+                            camera->getPosition() - dx
                         );
                         camera->setTarget(
-                            camera->getTarget() - d
+                            camera->getTarget() - dx
                         );
                         return true;
                     }
 
                     if ( event.KeyInput.Key == KEY_KEY_D ){
                         //strafe right
-                        vector3df d = Y.crossProduct(
+                        vector3df dx = Y.crossProduct(
                             camera->getTarget() -
                             camera->getPosition()
                         )*moveStep;
                         camera->setPosition(
-                            camera->getPosition() + d
+                            camera->getPosition() + dx
                         );
                         camera->setTarget(
-                            camera->getTarget() + d
+                            camera->getTarget() + dx
                         );
                         return true;
                     }
@@ -150,24 +150,30 @@ class MyEventReceiver : public IEventReceiver
 
                     if ( event.KeyInput.Key == KEY_KEY_S ){
                         //move back
+                        vector3df dx = (
+                            camera->getTarget() -
+                            camera->getPosition()
+                        )*moveStep;
                         camera->setPosition(
-                            camera->getPosition() -
-                            (
-                                camera->getTarget() -
-                                camera->getPosition()
-                            )*moveStep
+                            camera->getPosition() - dx
+                        );
+                        camera->setTarget(
+                            camera->getTarget() - dx
                         );
                         return true;
                     }
 
                     else if ( event.KeyInput.Key == KEY_KEY_W ){
                         //move forward
+                        vector3df dx = (
+                            camera->getTarget() -
+                            camera->getPosition()
+                        )*moveStep;
                         camera->setPosition(
-                            camera->getPosition() +
-                            (
-                                camera->getTarget() -
-                                camera->getPosition()
-                            )*moveStep
+                            camera->getPosition() + dx
+                        );
+                        camera->setTarget(
+                            camera->getTarget() + dx
                         );
                         return true;
                     }
@@ -440,6 +446,10 @@ int main()
     Robot robot = Robot(driver, camera, anim);
 
 //-- run ------------------------------------------------------------//
+    //TEST
+    vector3df oldpos, oldtarget;
+    //END TEST
+    
 	while(device->run())
 	{
         if (device->isWindowActive())
@@ -449,7 +459,13 @@ int main()
             driver->endScene();
             if(!test)
                 robot.update();
-            cout << robot.str();
+            if(
+                robot.getPosition() != oldpos ||
+                robot.getTarget() != oldtarget
+            )
+                cout << robot.str();
+            oldpos = robot.getPosition();
+            oldtarget = robot.getTarget();
         }
 	}
 	device->drop();

@@ -105,6 +105,9 @@ class Robot
         */
         std::string str();
 
+        vector3df getPosition(){ return camera->getPosition(); }
+        vector3df getTarget(){ return camera->getTarget(); }
+
     private:
 
         IVideoDriver* driver;
