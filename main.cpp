@@ -66,7 +66,7 @@ using namespace core;
 using namespace scene;
 using namespace video;
 
-const bool test = true;       //test keyboard control vs automatic
+const bool test = false;       //test keyboard control vs automatic
 
 //window
 dimension2d<u32> windowSize = dimension2d<u32>(400, 400);
@@ -75,7 +75,6 @@ const bool fullScreen = false;
 //robot
 vector3df pos0 = vector3df(0,0,-.5f);
 vector3df lookat0 = vector3df(0,0,.5f);
-ICameraSceneNode* camera;
 float rotateSpeed = 100.0f;
 float moveSpeed = 0.0005f;
 float collisionRadius = 0.01f;
@@ -97,7 +96,7 @@ int main()
     {
         HumanBrain* humanbrain = new HumanBrain();
         brain = humanbrain;
-        HumanReceiver* receiver = new HumanReceiver(humanbrain,camera);
+        HumanReceiver* receiver = new HumanReceiver(humanbrain);
         device = createDevice(
             EDT_OPENGL,
             windowSize,
@@ -252,27 +251,6 @@ int main()
         //node->getMaterial(0).DiffuseColor.set(0,0,0,255);
         //node->getMaterial(0).Lighting = true;
 
-//-- camera ------------------------------------------------------------//
-
-    camera = smgr->addCameraSceneNode(
-        0,
-        vector3df(0,0,0),
-        vector3df(0,100,0),
-        -1,
-        true
-    );
-    camera->bindTargetAndRotation(true);
-
-    // camera initial position
-    device->getCursorControl()->setVisible(true);
-    camera->setPosition(pos0);
-    camera->setTarget(lookat0);
-    camera->setUpVector(vector3df(0,1,0));
-    //camera->setAutomaticCulling(EAC_OFF);
-
-    camera->setNearValue(collisionRadius*.99f);
-    camera->setFarValue(100.f);
-
 //-- collision ------------------------------------------------------------//
 
     /* Put everything we want to do collision checking with inside the meta selector. */
@@ -322,47 +300,44 @@ int main()
         }
     }
 
-    /*Do the collision checking between camera the and the rest of the world.*/
-    ISceneNodeAnimatorCollisionResponse* anim = smgr->createCollisionResponseAnimator(
-        meta,
-        camera,
-        vector3df(1.f,1.f,1.f)*collisionRadius,     //size of colision ball around camera. default vector3df(30, 60, 30) 
-        vector3df(0,0,0),     // gravity
-        vector3df(0,0,0));    //eye position
+//-- robots ------------------------------------------------------------//
+
+    //create robots
+    Robot robot = Robot(device, meta, brain, pos0, lookat0, collisionRadius);
+
     meta->drop(); // As soon as we're done with the selector, drop it.
-    camera->addAnimator(anim);
-//    anim->drop();  // And likewise, drop the animator when we're done referring to it.
-
-//-- robot ------------------------------------------------------------//
-
-    //create robot
-    camera->setPosition(pos0);
-    camera->setTarget(lookat0);
-    Robot robot = Robot(driver, camera, anim, brain);
 
 //-- run ------------------------------------------------------------//
     //TEST
     vector3df oldpos, oldtarget;
     //END TEST
     
+    int nFrames = 0;
+    ITimer* timer = device->getTimer();
+    int t0 = timer->getTime();
+
 	while(device->run())
 	{
-        if (device->isWindowActive())
-        {
-            driver->beginScene(true, true, 0);
-            smgr->drawAll();
-            driver->endScene();
-                robot.update();
-            //TEST
-            if(
-                robot.getPosition() != oldpos
-                || robot.getTarget() != oldtarget
-            )
-                cout << robot.str();
-            oldpos = robot.getPosition();
-            oldtarget = robot.getTarget();
-            //END TEST
-        }
+        //if (device->isWindowActive()) //only work if window has focus.
+        driver->beginScene(true, true, 0);
+        smgr->drawAll();
+        driver->endScene();
+            robot.update();
+        //TEST
+        if(
+            robot.getPosition() != oldpos
+            || robot.getTarget() != oldtarget
+        )
+            cout << robot.str();
+        oldpos = robot.getPosition();
+        oldtarget = robot.getTarget();
+
+        //FPS info
+            //cout << "frame no:" << endl << nFrames << endl;;
+            //cout << "average fps:" << endl << 1000*nFrames/(float)(timer->getTime()-t0) << endl;
+            //nFrames++;
+         
+        //END TEST
 	}
 	device->drop();
 	return 0;

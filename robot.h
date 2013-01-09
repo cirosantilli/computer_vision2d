@@ -119,14 +119,13 @@ class HumanReceiver : public IEventReceiver
 {
     public:
 
-        HumanReceiver(HumanBrain* brain, ICameraSceneNode* camera);
+        HumanReceiver(HumanBrain* brain);
 
         virtual bool OnEvent(const SEvent& event);
 
     private:
 
         HumanBrain* brain;
-        ICameraSceneNode* camera;
 
 };
 
@@ -144,10 +143,12 @@ class Robot
 
         Robot
         (
-            IVideoDriver* driver,
-            ICameraSceneNode* camera,
-            ISceneNodeAnimatorCollisionResponse* anim,
-            Brain* brain
+            IrrlichtDevice* device,
+            IMetaTriangleSelector* meta,
+            Brain* brain,
+            vector3df pos0,
+            vector3df lookat0,
+            float collisionRadius
         );
 
         /*

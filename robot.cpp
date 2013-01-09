@@ -34,7 +34,7 @@ RobotBrain::~RobotBrain(){}
 
 void RobotBrain::pushInput(BrainInput* in)
 {
-    curOutput = BrainOutput(.01f,.00f,0.f); //EST
+    curOutput = BrainOutput(.01f,.00f,1.f); //EST
 
     //int width = image->getDimension().Width;
     //int center[2] = {width/2,image->getDimension().Height/2};
@@ -74,9 +74,8 @@ HumanBrain::HumanBrain() :
 HumanBrain::~HumanBrain(){}
 
 HumanReceiver::HumanReceiver(
-    HumanBrain* brain,
-    ICameraSceneNode* camera
-):brain(brain), camera(camera)
+    HumanBrain* brain
+) : brain(brain)
 {
 }
 
@@ -133,10 +132,6 @@ bool HumanReceiver::OnEvent(const SEvent& event)
 
     }
 
-    //send other events to camera
-    if (camera)
-        return camera->OnEvent(event);
-
     return false;
 }
 
@@ -165,16 +160,54 @@ void HumanBrain::pushInput(BrainInput* in)
 }
 
 Robot::Robot(
-    IVideoDriver* driver,
-    ICameraSceneNode* camera,
-    ISceneNodeAnimatorCollisionResponse* anim,
-    Brain* brain
+    IrrlichtDevice* device,
+    IMetaTriangleSelector* meta,
+    Brain* brain,
+    vector3df pos0,
+    vector3df lookat0,
+    float collisionRadius
 ) :
-    driver(driver),
-    camera(camera),
-    anim(anim),
     brain(brain)
-{}
+{
+
+//-- camera -----------------------------------------------------------//
+
+    ISceneManager* smgr = device->getSceneManager();
+    driver = device->getVideoDriver();
+
+    camera = smgr->addCameraSceneNode(
+        0,
+        vector3df(0,0,0),
+        vector3df(0,100,0),
+        -1,
+        true
+    );
+    camera->bindTargetAndRotation(true);
+    //camera = smgr->addCameraSceneNodeFPS(0, .1f, .3f, 0, 0, 0, true, 3.f);
+        //for fps
+        //already binds target and rotation
+
+    // camera initial position
+    device->getCursorControl()->setVisible(true);
+    camera->setPosition(pos0);
+    camera->setTarget(lookat0);
+    camera->setUpVector(vector3df(0,1,0));
+    //camera->setAutomaticCulling(EAC_OFF);
+
+    camera->setNearValue(collisionRadius*.99f);
+    camera->setFarValue(100.f);
+
+//-- collision --------------------------------------------------------//
+    anim = smgr->createCollisionResponseAnimator(
+        meta,
+        camera,
+        vector3df(1.f,1.f,1.f)*collisionRadius,     //size of colision ball around camera. default vector3df(30, 60, 30) 
+        vector3df(0,0,0),     // gravity
+        vector3df(0,0,0));    //eye position
+    camera->addAnimator(anim);
+    anim->drop();  // And likewise, drop the animator when we're done referring to it.
+
+}
 
 BrainInput Robot::getBrainInput()
 {
@@ -231,7 +264,7 @@ void Robot::actuate(BrainOutput* out)
     //rotation
     vector3df t = vector3df(camera->getTarget());
     t.rotateXZBy(
-        out->rotateStep,
+        -out->rotateStep,
         camera->getPosition()
     );
     camera->setTarget(t);
