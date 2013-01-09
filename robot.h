@@ -57,23 +57,76 @@ including its memory.
 for example, typically excludes absolute positions,
 which the robot does not know about
 */
-class RobotBrain
+class Brain
 {
 
     public:
 
-        RobotBrain();
+        Brain();
+        virtual ~Brain();
 
         /*
         updates brain output from a given input
         */
-        void pushInput(BrainInput* in);
+        virtual void pushInput(BrainInput* in) = 0;
 
         BrainOutput* getOutput();
 
-    private:
+    protected:
 
         BrainOutput curOutput;
+
+};
+
+/*
+one possible brain algorithm
+
+create a new class for each new algorithm
+*/
+class RobotBrain : public Brain
+{
+    public:
+
+        RobotBrain();
+        virtual ~RobotBrain();
+
+        virtual void pushInput(BrainInput* in);
+};
+
+/*
+for human controlled test runs
+*/
+class HumanBrain : public Brain
+{
+    public:
+
+        HumanBrain();
+        virtual ~HumanBrain();
+
+        virtual void pushInput(BrainInput* in);
+
+        bool forwardDown;
+        bool backwardDown;
+        bool strafeLeftDown;
+        bool strafeRightDown;
+        bool rotateLeftDown;
+        bool rotateRightDown;
+
+};
+
+/*IEventReceiver for test human input*/
+class HumanReceiver : public IEventReceiver
+{
+    public:
+
+        HumanReceiver(HumanBrain* brain, ICameraSceneNode* camera);
+
+        virtual bool OnEvent(const SEvent& event);
+
+    private:
+
+        HumanBrain* brain;
+        ICameraSceneNode* camera;
 
 };
 
@@ -87,11 +140,14 @@ class Robot
 
     public:
 
+        Robot();
+
         Robot
         (
             IVideoDriver* driver,
             ICameraSceneNode* camera,
-            ISceneNodeAnimatorCollisionResponse* anim
+            ISceneNodeAnimatorCollisionResponse* anim,
+            Brain* brain
         );
 
         /*
@@ -114,7 +170,7 @@ class Robot
         ICameraSceneNode* camera; //also contains robot inner state: position and target
         ISceneNodeAnimatorCollisionResponse* anim;
         vector3df oldpos, oldlookat; //TEST
-        RobotBrain brain;
+        Brain* brain;
         BrainInput in; //last brain input
 
         const static float forwardStepMax = 10;
@@ -137,7 +193,5 @@ class Robot
         BrainInput getBrainInput();
 
 };
-
-ostream& operator<<(ostream& os, const Robot& c);
 
 #endif

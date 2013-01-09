@@ -5,6 +5,9 @@
 
 using namespace std;
 
+Brain::Brain(){}
+Brain::~Brain(){}
+
 BrainInput::BrainInput
 (
     IImage* image,
@@ -27,10 +30,11 @@ BrainOutput::BrainOutput(
 {}
 
 RobotBrain::RobotBrain(){}
+RobotBrain::~RobotBrain(){}
 
 void RobotBrain::pushInput(BrainInput* in)
 {
-    curOutput = BrainOutput(.01f,.00f,10.f); //TEST
+    curOutput = BrainOutput(.01f,.00f,0.f); //EST
 
     //int width = image->getDimension().Width;
     //int center[2] = {width/2,image->getDimension().Height/2};
@@ -55,16 +59,121 @@ void RobotBrain::pushInput(BrainInput* in)
         //pleasure += 10;
 }
 
-BrainOutput* RobotBrain::getOutput() { return &curOutput; }
+BrainOutput* Brain::getOutput() { return &curOutput; }
+
+HumanBrain::HumanBrain() :
+        forwardDown(false),
+        backwardDown(false),
+        strafeLeftDown(false),
+        strafeRightDown(false),
+        rotateLeftDown(false),
+        rotateRightDown(false)
+{
+}
+
+HumanBrain::~HumanBrain(){}
+
+HumanReceiver::HumanReceiver(
+    HumanBrain* brain,
+    ICameraSceneNode* camera
+):brain(brain), camera(camera)
+{
+}
+
+bool HumanReceiver::OnEvent(const SEvent& event)
+{
+    if (event.EventType == irr::EET_KEY_INPUT_EVENT)
+    {
+        bool isDown;
+        if ( event.KeyInput.PressedDown )
+            isDown = true;
+        else
+            isDown = false;
+
+        if ( event.KeyInput.Key == KEY_KEY_A ){
+            //strafe left
+            brain->strafeLeftDown = isDown;
+            return true;
+        }
+
+        if ( event.KeyInput.Key == KEY_KEY_D ){
+            //strafe right
+            brain->strafeRightDown = isDown;
+            return true;
+        }
+
+        if ( event.KeyInput.Key == KEY_KEY_E ){
+            //rotate right
+            brain->rotateRightDown = isDown;
+            return true;
+        }
+
+        if ( event.KeyInput.Key == KEY_KEY_Q ){
+            //rotate left
+            brain->rotateLeftDown = isDown;
+            return true;
+        }
+
+        if ( event.KeyInput.Key == KEY_KEY_S ){
+            //move back
+            brain->backwardDown = isDown;
+            return true;
+        }
+
+        else if ( event.KeyInput.Key == KEY_KEY_W ){
+            //move forward
+            brain->forwardDown = isDown;
+            return true;
+        }
+
+        else if ( event.KeyInput.Key == KEY_ESCAPE ){
+            //quit
+            exit(EXIT_SUCCESS);
+        }
+
+    }
+
+    //send other events to camera
+    if (camera)
+        return camera->OnEvent(event);
+
+    return false;
+}
+
+void HumanBrain::pushInput(BrainInput* in)
+{
+    float forward=0.f, strafe=0.f, rotate=0.f;
+
+    float forwardStep = .01f; //TEST: on a real continuous test, frame rate must be fixed!
+    float strafeStep = forwardStep; //TEST: on a real continuous test, frame rate must be fixed!
+    float rotateStep = 2.f; //TEST: on a real continuous test, frame rate must be fixed!
+
+    if(backwardDown)
+        forward -= forwardStep;
+    if(forwardDown)
+        forward += forwardStep;
+    if(strafeLeftDown)
+        strafe -= strafeStep;
+    if(strafeRightDown)
+        strafe += strafeStep;
+    if(rotateLeftDown)
+        rotate -= rotateStep;
+    if(rotateRightDown)
+        rotate += rotateStep;
+
+    curOutput = BrainOutput(forward,strafe,rotate);
+}
 
 Robot::Robot(
     IVideoDriver* driver,
     ICameraSceneNode* camera,
-    ISceneNodeAnimatorCollisionResponse* anim
+    ISceneNodeAnimatorCollisionResponse* anim,
+    Brain* brain
 ) :
     driver(driver),
     camera(camera),
-    anim(anim)
+    anim(anim),
+    brain(brain)
 {}
 
 BrainInput Robot::getBrainInput()
@@ -93,8 +202,8 @@ BrainInput Robot::getBrainInput()
 void Robot::update()
 {
     in = getBrainInput();
-    brain.pushInput(&in);
-    actuate(brain.getOutput());
+    brain->pushInput(&in);
+    actuate(brain->getOutput());
 }
 
 void Robot::actuate(BrainOutput* out)

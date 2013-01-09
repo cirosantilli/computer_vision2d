@@ -66,7 +66,7 @@ using namespace core;
 using namespace scene;
 using namespace video;
 
-const bool test = false;       //test keyboard control vs automatic
+const bool test = true;       //test keyboard control vs automatic
 
 //window
 dimension2d<u32> windowSize = dimension2d<u32>(400, 400);
@@ -84,126 +84,20 @@ float moveStep = 0.01f;
 
 int FruitID = 10;
 
-class MyEventReceiver : public IEventReceiver
-{
-    public:
-        virtual bool OnEvent(const SEvent& event)
-        {
-
-            //escape quit
-            if (event.EventType == irr::EET_KEY_INPUT_EVENT)
-            {
-                if ( event.KeyInput.PressedDown )
-                {
-
-                    if ( event.KeyInput.Key == KEY_KEY_A ){
-                        //strafe left
-                        vector3df dx = Y.crossProduct(
-                            camera->getTarget() -
-                            camera->getPosition()
-                        )*moveStep;
-                        camera->setPosition(
-                            camera->getPosition() - dx
-                        );
-                        camera->setTarget(
-                            camera->getTarget() - dx
-                        );
-                        return true;
-                    }
-
-                    if ( event.KeyInput.Key == KEY_KEY_D ){
-                        //strafe right
-                        vector3df dx = Y.crossProduct(
-                            camera->getTarget() -
-                            camera->getPosition()
-                        )*moveStep;
-                        camera->setPosition(
-                            camera->getPosition() + dx
-                        );
-                        camera->setTarget(
-                            camera->getTarget() + dx
-                        );
-                        return true;
-                    }
-
-                    if ( event.KeyInput.Key == KEY_KEY_E ){
-                        //rotate right
-                        vector3df t = vector3df(camera->getTarget());
-                        t.rotateXZBy(
-                            -rotateStep,
-                            camera->getPosition()
-                        );
-                        camera->setTarget(t);
-                        return true;
-                    }
-
-                    if ( event.KeyInput.Key == KEY_KEY_Q ){
-                        //rotate left
-                        vector3df t = vector3df(camera->getTarget());
-                        t.rotateXZBy(
-                            rotateStep,
-                            camera->getPosition()
-                        );
-                        camera->setTarget(t);
-                        return true;
-                    }
-
-                    if ( event.KeyInput.Key == KEY_KEY_S ){
-                        //move back
-                        vector3df dx = (
-                            camera->getTarget() -
-                            camera->getPosition()
-                        )*moveStep;
-                        camera->setPosition(
-                            camera->getPosition() - dx
-                        );
-                        camera->setTarget(
-                            camera->getTarget() - dx
-                        );
-                        return true;
-                    }
-
-                    else if ( event.KeyInput.Key == KEY_KEY_W ){
-                        //move forward
-                        vector3df dx = (
-                            camera->getTarget() -
-                            camera->getPosition()
-                        )*moveStep;
-                        camera->setPosition(
-                            camera->getPosition() + dx
-                        );
-                        camera->setTarget(
-                            camera->getTarget() + dx
-                        );
-                        return true;
-                    }
-
-                    //esc quit
-                    else if ( event.KeyInput.Key == KEY_ESCAPE ){
-                        exit(EXIT_SUCCESS);
-                    }
-                }
-            }
-
-            //send other events to camera
-            if (camera)
-                return camera->OnEvent(event);
-
-            return false;
-        }
-};
-
 int main()
 {
 
 //-- device ------------------------------------------------------------//
 
-    MyEventReceiver receiver;
+    Brain* brain;
     IrrlichtDevice* device;
 
     // create device
     if(test)
     {
+        HumanBrain* humanbrain = new HumanBrain();
+        brain = humanbrain;
+        HumanReceiver* receiver = new HumanReceiver(humanbrain,camera);
         device = createDevice(
             EDT_OPENGL,
             windowSize,
@@ -211,9 +105,10 @@ int main()
             fullScreen,
             false,
             false,
-            &receiver
+            receiver
         );
     } else {
+        brain = new RobotBrain;
         device = createDevice(
             EDT_OPENGL,
             windowSize,
@@ -443,7 +338,7 @@ int main()
     //create robot
     camera->setPosition(pos0);
     camera->setTarget(lookat0);
-    Robot robot = Robot(driver, camera, anim);
+    Robot robot = Robot(driver, camera, anim, brain);
 
 //-- run ------------------------------------------------------------//
     //TEST
@@ -457,15 +352,16 @@ int main()
             driver->beginScene(true, true, 0);
             smgr->drawAll();
             driver->endScene();
-            if(!test)
                 robot.update();
+            //TEST
             if(
-                robot.getPosition() != oldpos ||
-                robot.getTarget() != oldtarget
+                robot.getPosition() != oldpos
+                || robot.getTarget() != oldtarget
             )
                 cout << robot.str();
             oldpos = robot.getPosition();
             oldtarget = robot.getTarget();
+            //END TEST
         }
 	}
 	device->drop();
