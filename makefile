@@ -1,26 +1,36 @@
-IN_DIR=./
-INS:=$(wildcard $(IN_DIR)*.cpp)
-OUT_DIR=_out/
-OUT_BNAME=main.out
-OUT=$(OUT_DIR)$(OUT_BNAME)
-
 CC=g++
-CFLAGS = -Wall
-INCLUDE_PATH=-I/usr/include/irrlicht
-LIBS=-lIrrlicht
+LIBS=-lglut -lGLU -lGL -lIrrlicht
+INCLUDE_DIRS=-I/usr/include/GL -I/usr/include/irrlicht
 
-.PHONY: all mkdir clean run
+IN_EXT=.cpp
+IN_DIR=./
+AUX_DIR=_aux/
+AUX_EXT=.o
+OUT_DIR=_out/
+OUT_EXT=
+
+INS=$(wildcard $(IN_DIR)*$(IN_EXT))
+INS_NODIR:=$(notdir $(INS))
+AUXS_NODIR:=$(patsubst %$(IN_EXT),%$(AUX_EXT),$(INS_NODIR))
+AUXS=$(addprefix $(AUX_DIR),$(AUXS_NODIR))
+OUT=$(OUT_DIR)main$(OUT_EXT)
+
+.PHONY: all clean mkdir run 
 
 all: mkdir $(OUT)
 
 run: all
-	./$(OUT)
+	./$(OUT) $(RUN_ARGS)
+
+$(OUT): $(AUXS)
+	$(CC) $^ -o "$@" $(LIBS)
+
+$(AUX_DIR)%$(AUX_EXT): $(IN_DIR)%$(IN_EXT)
+	$(CC) $(INCLUDE_DIRS) -c "$<" -o "$@"
 
 mkdir:
+	mkdir -p "$(AUX_DIR)"
 	mkdir -p "$(OUT_DIR)"
 
-$(OUT): $(INS)
-	$(CC) $(CFLAGS) $(INCLUDE_PATH) -o "$@" $^ $(LIBS)
-
 clean:
-	rm -rf "$(OUT_DIR)"
+	rm -rf $(AUX_DIR) $(OUT_DIR)

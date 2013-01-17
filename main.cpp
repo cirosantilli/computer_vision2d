@@ -49,6 +49,22 @@ I want to add a minimal amount of:
 #TODO
 
 - make an outside cylinder instead of square
+- arbitrary frame rate
+
+    kewords:
+        frame rate
+        offscreen rendering
+        render to texture
+        framebuffer
+        renderbuffer
+
+        glTexImage2D
+
+    links:
+        http://stackoverflow.com/questions/3191978/how-to-use-glut-opengl-to-render-to-a-file
+        http://www.songho.ca/opengl/gl_fbo.html
+        http://www.opengl.org/wiki/Framebuffer_Object
+        http://stackoverflow.com/questions/12157646/how-to-render-offscreen-on-opengl
 
 */
 #include <cmath>
@@ -66,15 +82,13 @@ using namespace core;
 using namespace scene;
 using namespace video;
 
-const bool test = false;       //test keyboard control vs automatic
+static const bool test = false;       //test keyboard control vs automatic
+static const int  humanControlled = 0;       //robot to be controlled. if negative, none.
 
 //window
-dimension2d<u32> windowSize = dimension2d<u32>(400, 400);
-const bool fullScreen = false;
+dimension2d<u32> windowSize = dimension2d<u32>(700, 700);
 
 //robot
-vector3df pos0 = vector3df(0,0,-.5f);
-vector3df lookat0 = vector3df(0,0,.5f);
 float rotateSpeed = 100.0f;
 float moveSpeed = 0.0005f;
 float collisionRadius = 0.01f;
@@ -85,39 +99,31 @@ int FruitID = 10;
 
 int main()
 {
+    const int nRobots = 1;
+    //given robot numbers will be controlled by humans
+    vector<int> humanBrainIds; 
+    //humanBrainIds.push_back(1);
+    //humanBrainIds.push_back(0);
 
 //-- device ------------------------------------------------------------//
 
-    Brain* brain;
     IrrlichtDevice* device;
 
-    // create device
-    if(test)
-    {
-        HumanBrain* humanbrain = new HumanBrain();
-        brain = humanbrain;
-        HumanReceiver* receiver = new HumanReceiver(humanbrain);
-        device = createDevice(
-            EDT_OPENGL,
-            windowSize,
-            16,
-            fullScreen,
-            false,
-            false,
-            receiver
-        );
-    } else {
-        brain = new RobotBrain;
-        device = createDevice(
-            EDT_OPENGL,
-            windowSize,
-            16,
-            fullScreen,
-            false,
-            false,
-            NULL
-        );
-    }
+    device = createDevice(
+        EDT_OPENGL, //driverType
+        windowSize,
+        16,  //bits
+        false,
+        false, //stencilbuffer
+        false, //vsync
+        NULL //receiver
+    );
+    //advanced device params
+        //SIrrlichtCreationParameters params;
+        //params.DeviceType = EIDT_CONSOLE;
+        //params.DriverType = EDT_OPENGL;
+        //params.WindowSize = windowSize;
+        //device = createDeviceEx(params);
 
     if (device == 0)
         return EXIT_FAILURE; // could not create selected driver.
@@ -193,7 +199,7 @@ int main()
         //node->getMaterial(0).EmissiveColor.set(0,0,0,0);
         //node->setMaterialFlag(EMF_WIREFRAME,true); //wireframe only
 
-    // left cube
+    //left cube
         node = smgr->addCubeSceneNode(
             0.2,    // width
             0,      // parent
@@ -205,7 +211,7 @@ int main()
         node->getMaterial(0).AmbientColor.set(0,255,0,0);
         node->getMaterial(0).DiffuseColor.set(0,255,0,0);
 
-    // right cube
+    //right cube
         node = smgr->addCubeSceneNode(
             .2f,    // width
             0,      // parent
@@ -218,24 +224,24 @@ int main()
         node->getMaterial(0).DiffuseColor.set(0,0,255,0);
 
     //cylinder
-        mesh = smgr->getGeometryCreator()->createCylinderMesh(
-            .1f,    //radius
-            1.,     //length
-            50,     //tesselation
-            SColor(),              //color
-            false,                 //closeTop
-            0.f                    //oblique
-        );
-        node = smgr->addMeshSceneNode(
-            mesh,
-            0,     //ISceneNode * parent
-            -1,    //s32 id
-            vector3df(0, -HEIGHT, 0),            //const core::vector3df & position
-            vector3df(0, 0, 0),                  //const core::vector3df & rotation
-            vector3df(1.0f, 2.*HEIGHT, 1.0f)     //const core::vector3df & scale
-        );
-        node->getMaterial(0).AmbientColor.set(0,0,0,255);
-        node->getMaterial(0).DiffuseColor.set(0,0,0,255);
+        //mesh = smgr->getGeometryCreator()->createCylinderMesh(
+            //.1f,    //radius
+            //1.,     //length
+            //50,     //tesselation
+            //SColor(),              //color
+            //false,                 //closeTop
+            //0.f                    //oblique
+        //);
+        //node = smgr->addMeshSceneNode(
+            //mesh,
+            //0,     //ISceneNode * parent
+            //-1,    //s32 id
+            //vector3df(0, -HEIGHT, 0),            //const core::vector3df & position
+            //vector3df(0, 0, 0),                  //const core::vector3df & rotation
+            //vector3df(1.0f, 2.*HEIGHT, 1.0f)     //const core::vector3df & scale
+        //);
+        //node->getMaterial(0).AmbientColor.set(0,0,0,255);
+        //node->getMaterial(0).DiffuseColor.set(0,0,0,255);
 
     //sphere
         //node = smgr->addSphereSceneNode(
@@ -303,7 +309,37 @@ int main()
 //-- robots ------------------------------------------------------------//
 
     //create robots
-    Robot robot = Robot(device, meta, brain, pos0, lookat0, collisionRadius);
+    Brain* brains[nRobots];
+
+    //human control
+    vector<HumanBrain*> hBrains;
+    for( int i=0; i<nRobots; i++)
+    {
+        brains[i] = new RobotBrain();
+    }
+    for
+    (
+        vector<int>::iterator i = humanBrainIds.begin();
+        i != humanBrainIds.end();
+        ++i
+    )
+    {
+        if ( *i > nRobots )
+        {
+            cerr << "no such robot: " << *i << endl;
+            exit(EXIT_FAILURE);
+        }
+        delete brains[*i];
+        HumanBrain* hBrain = new HumanBrain();
+        brains[*i] = hBrain;
+        hBrains.push_back(hBrain);
+    }
+    HumanReceiver hReceiver = HumanReceiver( hBrains );
+    device->setEventReceiver( &hReceiver );
+
+    Robot robots[nRobots];
+    robots[0] = Robot( device, meta, brains[0], vector3df(0,0,-0.5f), vector3df(0,0, 0.5f), 0.01 );
+    //robots[1] = Robot( device, meta, brains[1], vector3df(0,0, 0.5f), vector3df(0,0,-0.5f), 0.01 );
 
     meta->drop(); // As soon as we're done with the selector, drop it.
 
@@ -315,28 +351,43 @@ int main()
     int nFrames = 0;
     ITimer* timer = device->getTimer();
     int t0 = timer->getTime();
+    int w = driver->getScreenSize().Width;
+    int h = driver->getScreenSize().Height;
+    int dh = h/nRobots;
+    int observeRobot = 0;
 
 	while(device->run())
 	{
         //if (device->isWindowActive()) //only work if window has focus.
-        driver->beginScene(true, true, 0);
-        smgr->drawAll();
+
+        //draw
+
+        driver->setViewPort(rect<s32>(0,0,w,h));
+        driver->beginScene(true,true,0);
+        for(int i=0; i<nRobots; i++)
+        {
+            driver->setViewPort(rect<s32>(0,dh*i,w,dh*(i+1))); //only bottom portion gets rendered
+            smgr->setActiveCamera(robots[i].camera);
+            smgr->drawAll(); //draws on window scene of active camera
+            robots[i].update();
+        }
         driver->endScene();
-            robot.update();
+
         //TEST
-        if(
-            robot.getPosition() != oldpos
-            || robot.getTarget() != oldtarget
+        if
+        (
+            robots[observeRobot].getPosition() != oldpos
+            || robots[observeRobot].getTarget() != oldtarget
         )
-            cout << robot.str();
-        oldpos = robot.getPosition();
-        oldtarget = robot.getTarget();
+            cout << robots[observeRobot].str();
+        oldpos = robots[observeRobot].getPosition();
+        oldtarget = robots[observeRobot].getTarget();
 
         //FPS info
             //cout << "frame no:" << endl << nFrames << endl;;
             //cout << "average fps:" << endl << 1000*nFrames/(float)(timer->getTime()-t0) << endl;
             //nFrames++;
-         
+            cout << "fps:" << endl << driver->getFPS() << endl;
         //END TEST
 	}
 	device->drop();

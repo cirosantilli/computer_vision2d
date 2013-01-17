@@ -1,11 +1,13 @@
 #ifndef ROBOT_H
 #define ROBOT_H
 
+#include <iostream>
+
+#include <vector>
+
 #include <irrlicht.h>
 //for IImage and vector3df.
 //consider removing this dependency with custom internai image format
-
-#include <iostream>
 
 using namespace std;
 
@@ -59,7 +61,6 @@ which the robot does not know about
 */
 class Brain
 {
-
     public:
 
         Brain();
@@ -75,7 +76,6 @@ class Brain
     protected:
 
         BrainOutput curOutput;
-
 };
 
 /*
@@ -119,13 +119,15 @@ class HumanReceiver : public IEventReceiver
 {
     public:
 
-        HumanReceiver(HumanBrain* brain);
+        HumanReceiver(vector<HumanBrain*> brain);
 
         virtual bool OnEvent(const SEvent& event);
 
+        int getMaxBrains();
+
     private:
 
-        HumanBrain* brain;
+        vector<HumanBrain*> brains;
 
 };
 
@@ -164,11 +166,11 @@ class Robot
 
         vector3df getPosition(){ return camera->getPosition(); }
         vector3df getTarget(){ return camera->getTarget(); }
+        ICameraSceneNode* camera; //also contains robot inner state: position and target
 
     private:
 
         IVideoDriver* driver;
-        ICameraSceneNode* camera; //also contains robot inner state: position and target
         ISceneNodeAnimatorCollisionResponse* anim;
         vector3df oldpos, oldlookat; //TEST
         Brain* brain;

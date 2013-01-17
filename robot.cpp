@@ -1,5 +1,5 @@
-#include <iostream> //TEST
-#include <sstream> //TEST
+#include <iostream>
+#include <sstream>
 
 #include "robot.h"
 
@@ -34,7 +34,7 @@ RobotBrain::~RobotBrain(){}
 
 void RobotBrain::pushInput(BrainInput* in)
 {
-    curOutput = BrainOutput(.01f,.00f,1.f); //EST
+    curOutput = BrainOutput(.01f,.00f,0.f); //EST
 
     //int width = image->getDimension().Width;
     //int center[2] = {width/2,image->getDimension().Height/2};
@@ -74,58 +74,112 @@ HumanBrain::HumanBrain() :
 HumanBrain::~HumanBrain(){}
 
 HumanReceiver::HumanReceiver(
-    HumanBrain* brain
-) : brain(brain)
+    vector<HumanBrain*> brains
+) : brains(brains)
 {
+}
+
+int HumanReceiver::getMaxBrains()
+{
+    return 2;
 }
 
 bool HumanReceiver::OnEvent(const SEvent& event)
 {
     if (event.EventType == irr::EET_KEY_INPUT_EVENT)
     {
+        HumanBrain* brain;
         bool isDown;
+
         if ( event.KeyInput.PressedDown )
             isDown = true;
         else
             isDown = false;
 
-        if ( event.KeyInput.Key == KEY_KEY_A ){
-            //strafe left
-            brain->strafeLeftDown = isDown;
-            return true;
+        if( brains.size() > 0 )
+        {
+            brain = brains[0];
+            //brain0
+            if ( event.KeyInput.Key == KEY_KEY_A ){
+                //strafe left
+                brain->strafeLeftDown = isDown;
+                return true;
+            }
+
+            if ( event.KeyInput.Key == KEY_KEY_D ){
+                //strafe right
+                brain->strafeRightDown = isDown;
+                return true;
+            }
+
+            if ( event.KeyInput.Key == KEY_KEY_E ){
+                //rotate right
+                brain->rotateRightDown = isDown;
+                return true;
+            }
+
+            if ( event.KeyInput.Key == KEY_KEY_Q ){
+                //rotate left
+                brain->rotateLeftDown = isDown;
+                return true;
+            }
+
+            if ( event.KeyInput.Key == KEY_KEY_S ){
+                //move back
+                brain->backwardDown = isDown;
+                return true;
+            }
+
+            if ( event.KeyInput.Key == KEY_KEY_W ){
+                //move forward
+                brain->forwardDown = isDown;
+                return true;
+            }
+
+            if( brains.size() > 1 )
+            {
+                brain = brains[1];
+                //brain1
+    
+                if ( event.KeyInput.Key == KEY_KEY_F ){
+                    //strafe left
+                    brain->strafeLeftDown = isDown;
+                    return true;
+                }
+
+                if ( event.KeyInput.Key == KEY_KEY_H ){
+                    //strafe right
+                    brain->strafeRightDown = isDown;
+                    return true;
+                }
+
+                if ( event.KeyInput.Key == KEY_KEY_Y ){
+                    //rotate right
+                    brain->rotateRightDown = isDown;
+                    return true;
+                }
+
+                if ( event.KeyInput.Key == KEY_KEY_R ){
+                    //rotate left
+                    brain->rotateLeftDown = isDown;
+                    return true;
+                }
+
+                if ( event.KeyInput.Key == KEY_KEY_G ){
+                    //move back
+                    brain->backwardDown = isDown;
+                    return true;
+                }
+
+                if ( event.KeyInput.Key == KEY_KEY_T ){
+                    //move forward
+                    brain->forwardDown = isDown;
+                    return true;
+                }
+            }
         }
 
-        if ( event.KeyInput.Key == KEY_KEY_D ){
-            //strafe right
-            brain->strafeRightDown = isDown;
-            return true;
-        }
-
-        if ( event.KeyInput.Key == KEY_KEY_E ){
-            //rotate right
-            brain->rotateRightDown = isDown;
-            return true;
-        }
-
-        if ( event.KeyInput.Key == KEY_KEY_Q ){
-            //rotate left
-            brain->rotateLeftDown = isDown;
-            return true;
-        }
-
-        if ( event.KeyInput.Key == KEY_KEY_S ){
-            //move back
-            brain->backwardDown = isDown;
-            return true;
-        }
-
-        else if ( event.KeyInput.Key == KEY_KEY_W ){
-            //move forward
-            brain->forwardDown = isDown;
-            return true;
-        }
-
-        else if ( event.KeyInput.Key == KEY_ESCAPE ){
+        if ( event.KeyInput.Key == KEY_ESCAPE ){
             //quit
             exit(EXIT_SUCCESS);
         }
@@ -157,6 +211,10 @@ void HumanBrain::pushInput(BrainInput* in)
         rotate += rotateStep;
 
     curOutput = BrainOutput(forward,strafe,rotate);
+}
+
+Robot::Robot()
+{
 }
 
 Robot::Robot(
@@ -206,7 +264,6 @@ Robot::Robot(
         vector3df(0,0,0));    //eye position
     camera->addAnimator(anim);
     anim->drop();  // And likewise, drop the animator when we're done referring to it.
-
 }
 
 BrainInput Robot::getBrainInput()
@@ -290,21 +347,21 @@ std::string Robot::str()
     oss << lookat.Z;
     oss << endl;
 
-    /*rgb print
-        oss << "rgb:";
-        oss << endl;
-        IImage* img = driver->createScreenShot();
-        for(int i=0; i<img->getDimension().Width; i++){
-            SColor c = img->getPixel(i,0);
-            oss << c.getRed();
-            oss << " ";
-            oss << c.getGreen();
-            oss << " ";
-            oss << c.getBlue();
-            oss << endl;
-        }
-        oss << endl;
-    */
+    //rgb print
+        //oss << "rgb:";
+        //oss << endl;
+        //IImage* img = driver->createScreenShot();
+        //for(unsigned int i=0; i<img->getDimension().Width; i++){
+            //SColor c = img->getPixel(i,0);
+            //oss << c.getRed();
+            //oss << " ";
+            //oss << c.getGreen();
+            //oss << " ";
+            //oss << c.getBlue();
+            //oss << endl;
+        //}
+        //oss << endl;
+
     if(in.collisionOccurred)
     {
         //oss << "collision:";
