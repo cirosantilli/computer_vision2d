@@ -83,7 +83,6 @@ using namespace scene;
 using namespace video;
 
 static const bool test = false;       //test keyboard control vs automatic
-static const int  humanControlled = 0;       //robot to be controlled. if negative, none.
 
 //window
 dimension2d<u32> windowSize = dimension2d<u32>(700, 700);
@@ -99,7 +98,7 @@ int FruitID = 10;
 
 int main()
 {
-    const int nRobots = 1;
+    const int nRobots = 2;
     //given robot numbers will be controlled by humans
     vector<int> humanBrainIds; 
     //humanBrainIds.push_back(1);
@@ -309,37 +308,43 @@ int main()
 //-- robots ------------------------------------------------------------//
 
     //create robots
-    Brain* brains[nRobots];
+    Fly2D::Brain* brains[nRobots];
 
-    //human control
-    vector<HumanBrain*> hBrains;
-    for( int i=0; i<nRobots; i++)
-    {
-        brains[i] = new RobotBrain();
-    }
-    for
-    (
-        vector<int>::iterator i = humanBrainIds.begin();
-        i != humanBrainIds.end();
-        ++i
-    )
-    {
-        if ( *i > nRobots )
+
+    //all to a default type
+    //for ( int i=0; i<nRobots; i++ )
+    //{
+        //brains[i] = new Fly2D::BrainForward;
+        ////brains[i] = new Fly2D::BrainCircle();
+    //}
+
+    brains[0] = new Fly2D::BrainForward;
+    brains[1] = new Fly2D::BrainForward;
+
+    //decide human control
+        vector<Fly2D::BrainHuman*> hBrains;
+        for (
+            vector<int>::iterator i = humanBrainIds.begin();
+            i != humanBrainIds.end();
+            ++i
+        )
         {
-            cerr << "no such robot: " << *i << endl;
-            exit(EXIT_FAILURE);
+            if ( *i > nRobots )
+            {
+                cerr << "no such robot: " << *i << endl;
+                exit(EXIT_FAILURE);
+            }
+            delete brains[*i];
+            Fly2D::BrainHuman* hBrain = new Fly2D::BrainHuman;
+            brains[*i] = hBrain;
+            hBrains.push_back(hBrain);
         }
-        delete brains[*i];
-        HumanBrain* hBrain = new HumanBrain();
-        brains[*i] = hBrain;
-        hBrains.push_back(hBrain);
-    }
-    HumanReceiver hReceiver = HumanReceiver( hBrains );
-    device->setEventReceiver( &hReceiver );
+        Fly2D::ReceiverHuman hReceiver = Fly2D::ReceiverHuman( hBrains );
+        device->setEventReceiver( &hReceiver );
 
-    Robot robots[nRobots];
-    robots[0] = Robot( device, meta, brains[0], vector3df(0,0,-0.5f), vector3df(0,0, 0.5f), 0.01 );
-    //robots[1] = Robot( device, meta, brains[1], vector3df(0,0, 0.5f), vector3df(0,0,-0.5f), 0.01 );
+    Robot* robots[nRobots];
+    robots[0] = new Fly2D::Robot( *device, *meta, *brains[0], vector3df(0,0,-0.5f), vector3df(0,0, 0.5f),  0.01 );
+    robots[1] = new Fly2D::Robot( *device, *meta, *brains[1], vector3df(0,0,0.5f),  vector3df(0,0, -0.5f), 0.01 );
 
     meta->drop(); // As soon as we're done with the selector, drop it.
 
@@ -366,22 +371,28 @@ int main()
         driver->beginScene(true,true,0);
         for(int i=0; i<nRobots; i++)
         {
-            driver->setViewPort(rect<s32>(0,dh*i,w,dh*(i+1))); //only bottom portion gets rendered
-            smgr->setActiveCamera(robots[i].camera);
-            smgr->drawAll(); //draws on window scene of active camera
-            robots[i].update();
+            driver->setViewPort(rect<s32>(0,dh*i,w,dh*(i+1)));
+            //only part of window gets drawn into
+
+            smgr->setActiveCamera(robots[i]->camera);
+
+            smgr->drawAll(); 
+            //draws on window scene of active camera
+ 
+            robots[i]->update();
         }
         driver->endScene();
 
         //TEST
-        if
-        (
-            robots[observeRobot].getPosition() != oldpos
-            || robots[observeRobot].getTarget() != oldtarget
-        )
-            cout << robots[observeRobot].str();
-        oldpos = robots[observeRobot].getPosition();
-        oldtarget = robots[observeRobot].getTarget();
+        //if
+        //(
+            //robots[observeRobot].getPosition() != oldpos
+            //|| robots[observeRobot].getTarget() != oldtarget
+        //)
+        //oldpos = robots[observeRobot].getPosition();
+        //oldtarget = robots[observeRobot].getTarget();
+
+        cout << robots[observeRobot]->str();
 
         //FPS info
             //cout << "frame no:" << endl << nFrames << endl;;

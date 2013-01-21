@@ -2,7 +2,6 @@
 #define ROBOT_H
 
 #include <iostream>
-
 #include <vector>
 
 #include <irrlicht.h>
@@ -18,117 +17,51 @@ using namespace core;
 
 const vector3df Y = vector3df(0.f,1.f,0.f); //TODO put in a utils.h
 
-class BrainInput
-{
-    public:
-
-        BrainInput
-        (
-            IImage* image = NULL,
-            bool collisionOccurred = false,
-            float collisionAngle = 0.f
-        );
-
-        IImage* image;
-        bool collisionOccurred;
-        float collisionAngle;
-
-        bool touchFruit;
-};
-
-class BrainOutput
-{
-    public:
-
-        BrainOutput
-        (
-            float forwardStep = 0.f,
-            float strafeStep = 0.f,
-            float rotateStep = 0.f
-        );
-
-        float forwardStep; //+forward
-        float strafeStep; //+right
-        float rotateStep; //+ right
-};
-
 /*
-encapsulates only things the robot can percieve,
-including its memory.
+gets current inputs and returns current outputs
 
-for example, typically excludes absolute positions,
-which the robot does not know about
+can have inner state
+
+cannor perceive all of the Robot's variables such as
+absolute positions
 */
+template<class IN, class OUT>
 class Brain
 {
     public:
 
-        Brain();
-        virtual ~Brain();
+        Brain(){};
+        virtual ~Brain(){};
 
         /*
-        updates brain output from a given input
+        updates brain inner state and current output
         */
-        virtual void pushInput(BrainInput* in) = 0;
+        virtual void pushInput(const IN& in) = 0;
 
-        BrainOutput* getOutput();
+        const OUT& getOutput() const { return curOutput; };
 
     protected:
 
-        BrainOutput curOutput;
+        OUT curOutput;
 };
 
-/*
-one possible brain algorithm
-
-create a new class for each new algorithm
-*/
-class RobotBrain : public Brain
+class Robot
 {
     public:
 
-        RobotBrain();
-        virtual ~RobotBrain();
+        /*
+        gives current input to the brain,
+        and updates brain output
+        */
+        virtual void update() = 0;
 
-        virtual void pushInput(BrainInput* in);
-};
+        /*
+        returns a string representation of class
+        */
+        virtual std::string str() const = 0;
 
-/*
-for human controlled test runs
-*/
-class HumanBrain : public Brain
-{
-    public:
-
-        HumanBrain();
-        virtual ~HumanBrain();
-
-        virtual void pushInput(BrainInput* in);
-
-        bool forwardDown;
-        bool backwardDown;
-        bool strafeLeftDown;
-        bool strafeRightDown;
-        bool rotateLeftDown;
-        bool rotateRightDown;
-
-};
-
-/*IEventReceiver for test human input*/
-class HumanReceiver : public IEventReceiver
-{
-    public:
-
-        HumanReceiver(vector<HumanBrain*> brain);
-
-        virtual bool OnEvent(const SEvent& event);
-
-        int getMaxBrains();
-
-    private:
-
-        vector<HumanBrain*> brains;
-
+        ICameraSceneNode* camera;
+        //also contains robot inner state: position and target
 };
 
 /*
@@ -136,65 +69,194 @@ contains all information about the robot,
 including for example state information such as absolute position,
 which the robot typically does not know about
 */
-class Robot
+template<class IN, class OUT>
+class RobotTemplate : public Robot
 {
-
     public:
 
-        Robot();
+        RobotTemplate();
 
-        Robot
-        (
-            IrrlichtDevice* device,
-            IMetaTriangleSelector* meta,
-            Brain* brain,
-            vector3df pos0,
-            vector3df lookat0,
-            float collisionRadius
-        );
+        RobotTemplate(Brain<IN,OUT>& brain) : brain(brain) {}
 
         /*
         gives current input to the brain,
         and updates brain output
         */
-        void update();
+        virtual void update()
+        {
+            updateBrainInput();
+            brain.pushInput( curBrainInput );
+            actuate( brain.getOutput() );
+        }
+
+
+    protected:
 
         /*
-        returns a string representation of class
+        in general takes into account information
+        which is not directly visible by the brain
         */
-        std::string str();
-
-        vector3df getPosition(){ return camera->getPosition(); }
-        vector3df getTarget(){ return camera->getTarget(); }
-        ICameraSceneNode* camera; //also contains robot inner state: position and target
-
-    private:
-
-        IVideoDriver* driver;
-        ISceneNodeAnimatorCollisionResponse* anim;
-        vector3df oldpos, oldlookat; //TEST
-        Brain* brain;
-        BrainInput in; //last brain input
-
-        const static float forwardStepMax = 10;
-        const static float strafeStepMax = 10;
-        const static float rotateStepMax = 10;
-        float pleasure;
+        virtual void updateBrainInput() = 0;
 
         /*
         tries to update robot position given brain output.
         does not take collisions into account: this is taken into
         account elsewhere automatically
         */
-        void actuate(BrainOutput* out);
+        virtual void actuate(const OUT& out) = 0;
 
-        /*
-        decides what will be the brain input
-        from all the possibly extra information that describes
-        the robot state
-        */
-        BrainInput getBrainInput();
-
+        Brain<IN,OUT>& brain;
+        IN curBrainInput;
 };
+
+namespace Fly2D
+{
+    class BrainInput
+    {
+        public:
+
+            BrainInput
+            (
+                IImage* image = NULL,
+                bool collisionOccurred = false,
+                float collisionAngle = 0.f
+            );
+
+            IImage* image;
+            bool collisionOccurred;
+            float collisionAngle;
+
+            bool touchFruit;
+    };
+
+    class BrainOutput
+    {
+        public:
+
+            BrainOutput
+            (
+                float forwardStep = 0.0f,
+                float strafeStep = 0.0f,
+                float rotateStep = 0.0f
+            );
+
+            float forwardStep; //+forward
+            float strafeStep;  //+right
+            float rotateStep;  //+right
+    };
+
+    class Brain : public ::Brain<BrainInput,BrainOutput>
+    {
+        public:
+
+            Brain();
+            virtual ~Brain();
+
+            /*
+            updates brain inner state and current output
+            */
+            virtual void pushInput(const BrainInput& in) = 0;
+    };
+
+    /*
+    brain that goes always straight
+    */
+    class BrainForward : public Brain
+    {
+        virtual void pushInput(const BrainInput& in);
+    };
+
+    /*
+    brain that turns always in circles
+    */
+    class BrainCircle : public Brain
+    {
+        virtual void pushInput(const BrainInput& in);
+    };
+
+    /*
+    for human controlled brain
+    */
+    class BrainHuman : public Brain
+    {
+        public:
+
+            BrainHuman();
+            virtual ~BrainHuman();
+
+            virtual void pushInput(const BrainInput& in);
+
+            bool forwardDown;
+            bool backwardDown;
+            bool strafeLeftDown;
+            bool strafeRightDown;
+            bool rotateLeftDown;
+            bool rotateRightDown;
+    };
+
+    /*
+    IEventReceiver for test human input
+
+    takes only human fly brains
+    */
+    class ReceiverHuman : public IEventReceiver
+    {
+        public:
+
+            ReceiverHuman(vector<BrainHuman*> brain);
+
+            virtual bool OnEvent(const SEvent& event);
+
+            int getMaxBrains() const;
+
+        private:
+
+            vector<BrainHuman*> brains;
+    };
+
+    class Robot : public ::RobotTemplate<BrainInput,BrainOutput>
+    {
+        public:
+
+            Robot();
+
+            Robot
+            (
+                IrrlichtDevice& device,
+                IMetaTriangleSelector& meta,
+                Brain& brain,
+                vector3df pos0,
+                vector3df lookat0,
+                float collisionRadius
+            );
+
+            /*
+            returns a string representation of class
+            */
+            virtual std::string str() const;
+
+            vector3df getPosition(){ return camera->getPosition(); }
+            vector3df getTarget(){ return camera->getTarget(); }
+
+        protected:
+
+            IVideoDriver* driver;
+            ISceneNodeAnimatorCollisionResponse* anim;
+            vector3df oldpos, oldlookat; //TEST
+
+            const static float forwardStepMax;
+            const static float strafeStepMax;
+            const static float rotateStepMax;
+
+            float pleasure;
+
+            virtual void updateBrainInput();
+
+            /*
+            linear, saturates at max min
+            */
+            void actuate(const BrainOutput& out);
+    };
+}
 
 #endif
