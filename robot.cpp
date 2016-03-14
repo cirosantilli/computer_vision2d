@@ -142,7 +142,7 @@ bool Fly2D::ReceiverHuman::OnEvent(const SEvent& event)
             {
                 brain = brains[1];
                 //brain1
-    
+
                 if ( event.KeyInput.Key == KEY_KEY_F ){
                     //strafe left
                     brain->strafeLeftDown = isDown;
@@ -265,7 +265,7 @@ Fly2D::Robot::Robot
         vector3df(1.f,1.f,1.f) * collisionRadius,     //size of colision ball around camera. default vector3df(30, 60, 30) 
         vector3df(0,0,0),     // gravity
         vector3df(0,0,0)      //eye position
-    );    
+    );
     camera->addAnimator(anim);
     anim->drop();  // And likewise, drop the animator when we're done referring to it.
 }

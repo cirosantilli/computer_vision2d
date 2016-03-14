@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 
-#include <irrlicht.h>
+#include <irrlicht/irrlicht.h>
 //for IImage and vector3df.
 //consider removing this dependency with custom internai image format
 

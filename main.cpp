@@ -1,48 +1,53 @@
 /*
- 
 realistic characteristic:
-    first person perspective
-    collision detection?.
 
-missing realistic features
-    - textures
-    - large multijoint body
-        - currently small spherical punctual body
-    - intertia
-        gravity
-    - lightning
-    - soft bodies
-        - liquids
-        - deformable solides (wires, sheets, masses)
-        (still hard to simulate...)
-    - control imprecisions
+- first person perspective
+- collision detection?.
 
-- doubts
-    - movement redundancy (foward is redundant with backwards if one can turn,
-        only it is faster to go back directly, same for strafe)
+Missing realistic features:
 
-- scenarios
-    - comunication 
-    - invisible causes
+- textures
+- large multijoint body
+    - currently small spherical punctual body
+- intertia
+    gravity
+- lightning
+- soft bodies
+    - liquids
+    - deformable solides (wires, sheets, masses)
+    (still hard to simulate...)
+- control imprecisions
+
+Doubts
+
+- movement redundancy (foward is redundant with backwards if one can turn,
+    only it is faster to go back directly, same for strafe)
+
+Scenarios:
+
+- comunication
+- invisible causes
 
 Actions are taken based on an utility maximization/learning procedure.
 
 I want to add a minimal amount of:
 
- - pleasure pain primitives
+- pleasure pain primitives
+
     hunger, fear, "beauty", sex
- - innate knowledge
 
- so that the robot can robot can learn to solve rather complicated puzzles only from
- those basis.
+- innate knowledge
 
- I consider puzzels which rassemble situations as natural as possible:
+So that the robot can robot can learn to solve rather complicated puzzles only from
+those basis.
 
- - pleasure/pain touch sources.
-    eat a fruit (static pleasure source),
-    catch and eat an animal(dynamic pain resource)
-    be eaten by an animal (dynamic pain source)
-    to touch fire (static pain source)
+I consider puzzels which rassemble situations as natural as possible:
+
+- pleasure/pain touch sources.
+eat a fruit (static pleasure source),
+catch and eat an animal(dynamic pain resource)
+be eaten by an animal (dynamic pain source)
+to touch fire (static pain source)
 
 - animate pleasure sources
 
@@ -52,6 +57,7 @@ I want to add a minimal amount of:
 - arbitrary frame rate
 
     kewords:
+
         frame rate
         offscreen rendering
         render to texture
@@ -61,6 +67,7 @@ I want to add a minimal amount of:
         glTexImage2D
 
     links:
+
         http://stackoverflow.com/questions/3191978/how-to-use-glut-opengl-to-render-to-a-file
         http://www.songho.ca/opengl/gl_fbo.html
         http://www.opengl.org/wiki/Framebuffer_Object
@@ -71,7 +78,7 @@ I want to add a minimal amount of:
 #include <iostream>
 #include <cstdlib>
 
-#include <irrlicht.h>
+#include <irrlicht/irrlicht.h>
 
 #include "robot.h"
 
@@ -319,7 +326,8 @@ int main()
     //}
 
     brains[0] = new Fly2D::BrainForward;
-    brains[1] = new Fly2D::BrainForward;
+    //brains[1] = new Fly2D::BrainForward;
+    brains[1] = new Fly2D::BrainCircle;
 
     //decide human control
         vector<Fly2D::BrainHuman*> hBrains;
@@ -349,10 +357,11 @@ int main()
     meta->drop(); // As soon as we're done with the selector, drop it.
 
 //-- run ------------------------------------------------------------//
+
     //TEST
     vector3df oldpos, oldtarget;
     //END TEST
-    
+
     int nFrames = 0;
     ITimer* timer = device->getTimer();
     int t0 = timer->getTime();
